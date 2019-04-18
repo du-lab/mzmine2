@@ -486,7 +486,6 @@ public class ADAPChromatogram implements Feature {
     // Discard the fields we don't need anymore
     buildingSegment = null;
     lastMzPeak = null;
-
   }
 
   public double getBuildingSegmentLength() {

@@ -24,8 +24,10 @@ import com.google.common.collect.TreeRangeSet;
 import com.google.common.collect.RangeSet;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.logging.Logger;
 
+import java.util.stream.IntStream;
 import net.sf.mzmine.datamodel.DataPoint;
 import net.sf.mzmine.datamodel.Feature;
 import net.sf.mzmine.datamodel.MZmineProject;
@@ -56,10 +58,10 @@ import java.lang.*;
 
 public class ADAPChromatogramBuilderTask extends AbstractTask {
 
-  RangeSet<Double> rangeSet = TreeRangeSet.create();
+
   // After each range is created it does not change so we can map the ranges (which will be uniqe)
   // to the chromatograms
-  HashMap<Range, ADAPChromatogram> rangeToChromMap = new HashMap<Range, ADAPChromatogram>();
+
 
   private Logger logger = Logger.getLogger(this.getClass().getName());
 
@@ -70,7 +72,7 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
   private int processedPoints = 0, totalPoints;
   private ScanSelection scanSelection;
   private int newPeakID = 1;
-  private Scan[] scans;
+
 
   // User parameters
   private String suffix, massListName;
@@ -150,20 +152,14 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
     logger.info("Started chromatogram builder on " + dataFile);
 
-    scans = scanSelection.getMatchingScans(dataFile);
-    int allScanNumbers[] = scanSelection.getMatchingScanNumbers(dataFile);
-
-    List<Double> rtListForChromCDF = new ArrayList<Double>();
+    Scan[] scans = scanSelection.getMatchingScans(dataFile);
+    int[] allScanNumbers = scanSelection.getMatchingScanNumbers(dataFile);
 
     // Check if the scans are properly ordered by RT
     double prevRT = Double.NEGATIVE_INFINITY;
     for (Scan s : scans) {
       if (isCanceled()) {
         return;
-      }
-
-      if (writeChromCDF) {
-        rtListForChromCDF.add(s.getRetentionTime());
       }
 
       if (s.getRetentionTime() < prevRT) {
@@ -191,7 +187,9 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
 
     // make a list of all the data points
-    List<ExpandedDataPoint> allMzValues = new ArrayList<ExpandedDataPoint>();
+//    List<ExpandedDataPoint> allMzValues = new ArrayList<ExpandedDataPoint>();
+    List<DataPoint> allMzValues = new ArrayList<>();
+    List<Integer> allMzValuesScanNumbers = new ArrayList<>();
 
     for (Scan scan : scans) {
       if (isCanceled())
@@ -215,30 +213,33 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
       }
 
       for (DataPoint mzPeak : mzValues) {
-        ExpandedDataPoint curDatP = new ExpandedDataPoint(mzPeak, scan.getScanNumber());
-        allMzValues.add(curDatP);
-        // corespondingScanNum.add(scan.getScanNumber());
+//        ExpandedDataPoint curDatP = new ExpandedDataPoint(mzPeak, scan.getScanNumber());
+//        allMzValues.add(curDatP);
+        allMzValues.add(mzPeak);
+        allMzValuesScanNumbers.add(scan.getScanNumber());
       }
 
     }
 
-    // Integer[] simpleCorespondingScanNums = new Integer[corespondingScanNum.size()];
-    // corespondingScanNum.toArray(simpleCorespondingScanNums );
 
-    ExpandedDataPoint[] simpleAllMzVals = new ExpandedDataPoint[allMzValues.size()];
-    allMzValues.toArray(simpleAllMzVals);
+//    ExpandedDataPoint[] simpleAllMzVals = new ExpandedDataPoint[allMzValues.size()];
+//    allMzValues.toArray(simpleAllMzVals);
+//
+//    // sort data points by intensity
+//    Arrays.sort(simpleAllMzVals,
+//        new DataPointSorter(SortingProperty.Intensity, SortingDirection.Descending));
 
-    // sort data points by intensity
-    Arrays.sort(simpleAllMzVals,
-        new DataPointSorter(SortingProperty.Intensity, SortingDirection.Descending));
+    int[] allIndices = IntStream.range(0, allMzValues.size())
+        .boxed()
+        .sorted(Comparator.comparingDouble(index -> -allMzValues.get(index).getIntensity()))
+        .mapToInt(Integer::intValue)
+        .toArray();
+
+//    allMzValues.sort(Comparator.comparingDouble(p -> -p.getIntensity()));
 
 
-    // Set<Chromatogram> buildingChromatograms;
-    // buildingChromatograms = new LinkedHashSet<Chromatogram>();
-
-
-
-    double maxIntensity = simpleAllMzVals[0].getIntensity();
+//    double maxIntensity = simpleAllMzVals[0].getIntensity();
+    double maxIntensity = allMzValues.get(allIndices[0]).getIntensity();
 
     // count starts at 1 since we already have added one with a single point.
 
@@ -248,9 +249,17 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
 
     processedPoints = 0;
-    totalPoints = simpleAllMzVals.length;
+//    totalPoints = simpleAllMzVals.length;
+    totalPoints = allMzValues.size();
 
-    for (ExpandedDataPoint mzPeak : simpleAllMzVals) {
+    RangeSet<Double> rangeSet = TreeRangeSet.create();
+    HashMap<Range, ADAPChromatogram> rangeToChromMap = new HashMap<Range, ADAPChromatogram>();
+
+//    for (ExpandedDataPoint mzPeak : allMzValues) {
+    for (int index : allIndices) {
+
+      DataPoint mzPeak = allMzValues.get(index);
+      int scanNumber = allMzValuesScanNumbers.get(index);
 
       processedPoints++;
 
@@ -266,8 +275,10 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
       //////////////////////////////////////////////////
 
       Range<Double> containsPointRange = rangeSet.rangeContaining(mzPeak.getMZ());
-
       Range<Double> toleranceRange = mzTolerance.getToleranceRange(mzPeak.getMZ());
+
+
+
       if (containsPointRange == null) {
         // skip it entierly if the intensity is not high enough
         if (mzPeak.getIntensity() < minIntensityForStartChrom) {
@@ -314,7 +325,8 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
           Range<Double> newRange = Range.open(toBeLowerBound, toBeUpperBound);
           ADAPChromatogram newChrom = new ADAPChromatogram(dataFile, allScanNumbers);
 
-          newChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+//          newChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+          newChrom.addMzPeak(scanNumber, mzPeak);
 
           newChrom.setHighPointMZ(mzPeak.getMZ());
 
@@ -326,7 +338,8 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
         }
         else if (toBeLowerBound.equals(toBeUpperBound) && plusRange != null) {
           ADAPChromatogram curChrom = rangeToChromMap.get(plusRange);
-          curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+//          curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+          curChrom.addMzPeak(scanNumber, mzPeak);
         }
         else
           throw new IllegalStateException(String.format("Incorrect range [%f, %f] for m/z %f",
@@ -338,7 +351,8 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
         ADAPChromatogram curChrom = rangeToChromMap.get(containsPointRange);
 
-        curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+//        curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+        curChrom.addMzPeak(scanNumber, mzPeak);
 
         // update the entry in the map
         rangeToChromMap.put(containsPointRange, curChrom);
@@ -380,15 +394,17 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
     }
 
-    ADAPChromatogram[] chromatograms = buildingChromatograms.toArray(new ADAPChromatogram[0]);
+//    ADAPChromatogram[] chromatograms = buildingChromatograms.toArray(new ADAPChromatogram[0]);
+//
+//
+//    // Sort the final chromatograms by m/z
+//    Arrays.sort(chromatograms, new PeakSorter(SortingProperty.MZ, SortingDirection.Ascending));
 
-
-    // Sort the final chromatograms by m/z
-    Arrays.sort(chromatograms, new PeakSorter(SortingProperty.MZ, SortingDirection.Ascending));
+    buildingChromatograms.sort(Comparator.comparingDouble(ADAPChromatogram::getMZ));
 
 
     // Add the chromatograms to the new peak list
-    for (Feature finishedPeak : chromatograms) {
+    for (Feature finishedPeak : buildingChromatograms) {
       SimplePeakListRow newRow = new SimplePeakListRow(newPeakID);
       newPeakID++;
       newRow.addPeak(dataFile, finishedPeak);
@@ -402,6 +418,11 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
     // Add quality parameters to peaks
     QualityParameters.calculateQualityParameters(newPeakList);
+
+    // Clear all class variables
+    scans = null;
+    newPeakList = null;
+
 
     setStatus(TaskStatus.FINISHED);
 

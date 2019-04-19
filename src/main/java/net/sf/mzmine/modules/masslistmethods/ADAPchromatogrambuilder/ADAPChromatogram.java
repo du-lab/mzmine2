@@ -88,12 +88,18 @@ public class ADAPChromatogram implements Feature {
   private int weightedMzN = 0;
   private double sumOfWeights = 0;
 
+  // Remove these variables when chromatogram is finished
+  final private double minMz;
+  final private double maxMz;
+
   /**
    * Initializes this Chromatogram
    */
-  public ADAPChromatogram(RawDataFile dataFile) {
+  public ADAPChromatogram(RawDataFile dataFile, double minMz, double maxMz) {
 
     this.dataFile = dataFile;
+    this.minMz = minMz;
+    this.maxMz = maxMz;
     rawDataPointsRTRange = dataFile.getDataRTRange(1);
 
     dataPointsMap = new TreeMap<>();
@@ -141,6 +147,9 @@ public class ADAPChromatogram implements Feature {
    * @param mzValue
    */
   public void addMzPeak(int scanNumber, DataPoint mzValue) {
+
+    if (mzValue.getMZ() < minMz || mzValue.getMZ() >= maxMz)
+      throw new IllegalStateException("Attempt to add m/z-value outside chromatogram's m/z-range");
 
     double curIntensity;
 
@@ -465,6 +474,18 @@ public class ADAPChromatogram implements Feature {
   @Override
   public SimplePeakInformation getPeakInformation() {
     return peakInfo;
+  }
+
+  public boolean inMzRange(double mz) {
+    return minMz <= mz && mz < maxMz;
+  }
+
+  public Double getMaxMz() {
+    return maxMz;
+  }
+
+  public Double getMinMz() {
+    return minMz;
   }
 
 }

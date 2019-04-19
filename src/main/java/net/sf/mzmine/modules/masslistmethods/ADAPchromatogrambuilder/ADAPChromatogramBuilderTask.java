@@ -146,7 +146,6 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
    * @see Runnable#run()
    */
   public void run() {
-    boolean writeChromCDF = true;
 
     setStatus(TaskStatus.PROCESSING);
 
@@ -187,7 +186,6 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
 
     // make a list of all the data points
-//    List<ExpandedDataPoint> allMzValues = new ArrayList<ExpandedDataPoint>();
     List<DataPoint> allMzValues = new ArrayList<>();
     List<Integer> allMzValuesScanNumbers = new ArrayList<>();
 
@@ -213,33 +211,21 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
       }
 
       for (DataPoint mzPeak : mzValues) {
-//        ExpandedDataPoint curDatP = new ExpandedDataPoint(mzPeak, scan.getScanNumber());
-//        allMzValues.add(curDatP);
         allMzValues.add(mzPeak);
         allMzValuesScanNumbers.add(scan.getScanNumber());
       }
-
     }
 
-
-//    ExpandedDataPoint[] simpleAllMzVals = new ExpandedDataPoint[allMzValues.size()];
-//    allMzValues.toArray(simpleAllMzVals);
-//
-//    // sort data points by intensity
-//    Arrays.sort(simpleAllMzVals,
-//        new DataPointSorter(SortingProperty.Intensity, SortingDirection.Descending));
-
+    // Sorting indices of allMZValues based on their intensities in the descending order
     int[] allIndices = IntStream.range(0, allMzValues.size())
         .boxed()
         .sorted(Comparator.comparingDouble(index -> -allMzValues.get(index).getIntensity()))
         .mapToInt(Integer::intValue)
         .toArray();
 
-//    allMzValues.sort(Comparator.comparingDouble(p -> -p.getIntensity()));
 
-
-//    double maxIntensity = simpleAllMzVals[0].getIntensity();
-    double maxIntensity = allMzValues.get(allIndices[0]).getIntensity();
+////    double maxIntensity = simpleAllMzVals[0].getIntensity();
+//    double maxIntensity = allMzValues.get(allIndices[0]).getIntensity();
 
     // count starts at 1 since we already have added one with a single point.
 
@@ -249,16 +235,18 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
 
     processedPoints = 0;
-//    totalPoints = simpleAllMzVals.length;
     totalPoints = allMzValues.size();
 
-    RangeSet<Double> rangeSet = TreeRangeSet.create();
-    HashMap<Range, ADAPChromatogram> rangeToChromMap = new HashMap<Range, ADAPChromatogram>();
+//    RangeSet<Double> rangeSet = TreeRangeSet.create();
+//    HashMap<Range, ADAPChromatogram> rangeToChromMap = new HashMap<Range, ADAPChromatogram>();
+    List<ADAPChromatogram> chromatograms = new ArrayList<>();
 
-//    for (ExpandedDataPoint mzPeak : allMzValues) {
     for (int index : allIndices) {
 
       DataPoint mzPeak = allMzValues.get(index);
+      if (mzPeak == null)
+        continue;;
+
       int scanNumber = allMzValuesScanNumbers.get(index);
 
       processedPoints++;
@@ -267,19 +255,15 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
         return;
       }
 
-      if (mzPeak == null) {
-        // System.out.println("null Peak");
-        continue;
-      }
-
       //////////////////////////////////////////////////
 
-      Range<Double> containsPointRange = rangeSet.rangeContaining(mzPeak.getMZ());
+      ADAPChromatogram chromatogram = findChromatogram(chromatograms, mzPeak.getMZ());
+//      Range<Double> containsPointRange = rangeSet.rangeContaining(mzPeak.getMZ());
       Range<Double> toleranceRange = mzTolerance.getToleranceRange(mzPeak.getMZ());
 
 
 
-      if (containsPointRange == null) {
+      if (chromatogram == null) {
         // skip it entierly if the intensity is not high enough
         if (mzPeak.getIntensity() < minIntensityForStartChrom) {
           continue;
@@ -287,77 +271,67 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
         // look +- mz tolerance to see if ther is a range near by.
         // If there is use the proper boundry of that range for the
         // new range to insure than NON OF THE RANGES OVERLAP.
-        Range<Double> plusRange = rangeSet.rangeContaining(toleranceRange.upperEndpoint());
-        Range<Double> minusRange = rangeSet.rangeContaining(toleranceRange.lowerEndpoint());
-        Double toBeLowerBound;
-        Double toBeUpperBound;
-
-        double cur_max_testing_mz = mzPeak.getMZ();
+        ADAPChromatogram chromatogramAbove = findChromatogram(chromatograms, toleranceRange.upperEndpoint());
+        ADAPChromatogram chromatogramBelow = findChromatogram(chromatograms, toleranceRange.lowerEndpoint());
+//        Range<Double> plusRange = rangeSet.rangeContaining(toleranceRange.upperEndpoint());
+//        Range<Double> minusRange = rangeSet.rangeContaining(toleranceRange.lowerEndpoint());
+        double toBeLowerBound;
+        double toBeUpperBound;
 
 
         // If both of the above ranges are null then we make the new range spaning the full
         // mz tolerance range.
         // If one or both are not null we need to properly modify the range of the new
         // chromatogram so that none of the points are overlapping.
-        if ((plusRange == null) && (minusRange == null)) {
+        if ((chromatogramAbove == null) && (chromatogramBelow == null)) {
           toBeLowerBound = toleranceRange.lowerEndpoint();
           toBeUpperBound = toleranceRange.upperEndpoint();
-        } else if ((plusRange == null) && (minusRange != null)) {
+        } else if ((chromatogramAbove == null) && (chromatogramBelow != null)) {
           // the upper end point of the minus range will be the lower
           // range of the new one
-          toBeLowerBound = minusRange.upperEndpoint();
+//          toBeLowerBound = minusRange.upperEndpoint();
+          toBeLowerBound = chromatogramBelow.getMaxMz();
           toBeUpperBound = toleranceRange.upperEndpoint();
 
-        } else if ((minusRange == null) && (plusRange != null)) {
+        } else if ((chromatogramBelow == null) && (chromatogramAbove != null)) {
           toBeLowerBound = toleranceRange.lowerEndpoint();
-          toBeUpperBound = plusRange.lowerEndpoint();
-          // double tmp_this = plusRange.upperEndpoint();
-          // System.out.println("tmp_this");
-        } else if ((minusRange != null) && (plusRange != null)) {
-          toBeLowerBound = minusRange.upperEndpoint();
-          toBeUpperBound = plusRange.lowerEndpoint();
+//          toBeUpperBound = plusRange.lowerEndpoint();
+          toBeUpperBound = chromatogramAbove.getMinMz();
+        } else if ((chromatogramBelow != null) && (chromatogramAbove != null)) {
+//          toBeLowerBound = minusRange.upperEndpoint();
+//          toBeUpperBound = plusRange.lowerEndpoint();
+          toBeLowerBound = chromatogramBelow.getMaxMz();
+          toBeUpperBound = chromatogramAbove.getMinMz();
         } else {
           toBeLowerBound = 0.0;
           toBeUpperBound = 0.0;
         }
 
         if (toBeLowerBound < toBeUpperBound) {
-          Range<Double> newRange = Range.open(toBeLowerBound, toBeUpperBound);
-          ADAPChromatogram newChrom = new ADAPChromatogram(dataFile);  // allScanNumbers
-
-//          newChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
-          newChrom.addMzPeak(scanNumber, mzPeak);
-
-//          newChrom.setHighPointMZ(mzPeak.getMZ());
-
-
-          rangeToChromMap.put(newRange, newChrom);
+//          Range<Double> newRange = Range.open(toBeLowerBound, toBeUpperBound);
+          ADAPChromatogram newChromatogram = new ADAPChromatogram(
+              dataFile, toBeLowerBound, toBeUpperBound);  // allScanNumbers
+          newChromatogram.addMzPeak(scanNumber, mzPeak);
+          chromatograms.add(newChromatogram);
+//          rangeToChromMap.put(newRange, newChrom);
           // also need to put it in the set -> this is where the range can be efficiently found.
 
-          rangeSet.add(newRange);
+//          rangeSet.add(newRange);
         }
-        else if (toBeLowerBound.equals(toBeUpperBound) && plusRange != null) {
-          ADAPChromatogram curChrom = rangeToChromMap.get(plusRange);
-//          curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
-          curChrom.addMzPeak(scanNumber, mzPeak);
-        }
+//        else if (toBeLowerBound.equals(toBeUpperBound) && plusRange != null) {
+//          ADAPChromatogram curChrom = rangeToChromMap.get(plusRange);
+////          curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
+//          curChrom.addMzPeak(scanNumber, mzPeak);
+//        }
         else
           throw new IllegalStateException(String.format("Incorrect range [%f, %f] for m/z %f",
                   toBeLowerBound, toBeUpperBound, mzPeak.getMZ()));
 
       } else {
         // In this case we do not need to update the rangeSet
-
-
-        ADAPChromatogram curChrom = rangeToChromMap.get(containsPointRange);
-
-//        curChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
-        curChrom.addMzPeak(scanNumber, mzPeak);
-
-        // update the entry in the map
-        rangeToChromMap.put(containsPointRange, curChrom);
-
-
+        chromatogram.addMzPeak(scanNumber, mzPeak);
+//        rangeToChromMap.get(containsPointRange)
+//            .addMzPeak(scanNumber, mzPeak);
       }
     }
 
@@ -365,34 +339,46 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
     // System.out.println("making new chrom (ms): " + stopwatch2.elapsed(TimeUnit.MILLISECONDS));
 
     // finish chromatograms
-    Iterator<Range<Double>> RangeIterator = rangeSet.asRanges().iterator();
-
-    List<ADAPChromatogram> buildingChromatograms = new ArrayList<ADAPChromatogram>();
-
-    while (RangeIterator.hasNext()) {
-      if (isCanceled()) {
-        return;
-      }
-
-      Range<Double> curRangeKey = RangeIterator.next();
-
-      ADAPChromatogram chromatogram = rangeToChromMap.get(curRangeKey);
+    List<ADAPChromatogram> finishedChromatograms = new ArrayList<>(chromatograms.size());
+    for (ADAPChromatogram chromatogram : chromatograms) {
 
       chromatogram.finishChromatogram();
 
-      // And remove chromatograms who dont have a certian number of continous points above the
-      // IntensityThresh2 level.
       double numberOfContinuousPointsAboveNoise =
           chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2, allScanNumbers);
-      if (numberOfContinuousPointsAboveNoise < minimumScanSpan) {
-        // System.out.println("skipping chromatogram because it does not meet the min point scan
-        // requirements");
-        continue;
-      } else {
-        buildingChromatograms.add(chromatogram);
-      }
 
+      if (numberOfContinuousPointsAboveNoise >= minimumScanSpan)
+        finishedChromatograms.add(chromatogram);
     }
+
+//    Iterator<Range<Double>> RangeIterator = rangeSet.asRanges().iterator();
+//
+//    List<ADAPChromatogram> buildingChromatograms = new ArrayList<ADAPChromatogram>();
+//
+//    while (RangeIterator.hasNext()) {
+//      if (isCanceled()) {
+//        return;
+//      }
+//
+//      Range<Double> curRangeKey = RangeIterator.next();
+//
+//      ADAPChromatogram chromatogram = rangeToChromMap.get(curRangeKey);
+//
+//      chromatogram.finishChromatogram();
+//
+//      // And remove chromatograms who dont have a certian number of continous points above the
+//      // IntensityThresh2 level.
+//      double numberOfContinuousPointsAboveNoise =
+//          chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2, allScanNumbers);
+//      if (numberOfContinuousPointsAboveNoise < minimumScanSpan) {
+//        // System.out.println("skipping chromatogram because it does not meet the min point scan
+//        // requirements");
+//        continue;
+//      } else {
+//        buildingChromatograms.add(chromatogram);
+//      }
+//
+//    }
 
 //    ADAPChromatogram[] chromatograms = buildingChromatograms.toArray(new ADAPChromatogram[0]);
 //
@@ -400,17 +386,16 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 //    // Sort the final chromatograms by m/z
 //    Arrays.sort(chromatograms, new PeakSorter(SortingProperty.MZ, SortingDirection.Ascending));
 
-    buildingChromatograms.sort(Comparator.comparingDouble(ADAPChromatogram::getMZ));
+//    buildingChromatograms.sort(Comparator.comparingDouble(ADAPChromatogram::getMZ));
+    finishedChromatograms.sort(Comparator.comparingDouble(ADAPChromatogram::getMZ));
 
 
     // Add the chromatograms to the new peak list
-    for (Feature finishedPeak : buildingChromatograms) {
+    for (Feature finishedPeak : finishedChromatograms) {  // buildingChromatograms
       SimplePeakListRow newRow = new SimplePeakListRow(newPeakID);
       newPeakID++;
       newRow.addPeak(dataFile, finishedPeak);
       newPeakList.addRow(newRow);
-
-      // finishedPeak.outputChromToFile();
     }
 
     // Add new peaklist to the project
@@ -429,4 +414,11 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
     logger.info("Finished chromatogram builder on " + dataFile);
   }
 
+
+  private ADAPChromatogram findChromatogram(List<ADAPChromatogram> chromatograms, double mz) {
+    for (ADAPChromatogram c : chromatograms)
+      if (c.inMzRange(mz))
+        return c;
+    return null;
+  }
 }

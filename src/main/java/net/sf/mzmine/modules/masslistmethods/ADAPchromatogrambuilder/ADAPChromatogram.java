@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -75,9 +76,6 @@ public class ADAPChromatogram implements Feature {
   // Ranges of raw data points
   private Range<Double> rawDataPointsIntensityRange, rawDataPointsMZRange, rawDataPointsRTRange;
 
-  // Keep track of last added data point
-  private DataPoint lastMzPeak;
-
   // Isotope pattern. Null by default but can be set later by deisotoping
   // method.
   private IsotopePattern isotopePattern;
@@ -101,32 +99,6 @@ public class ADAPChromatogram implements Feature {
     dataPointsMap = new TreeMap<>();
   }
 
-//  public double getHighPointMZ() {
-//    return highPointMZ;
-//  }
-//
-//  public void setHighPointMZ(double toSet) {
-//    highPointMZ = toSet;
-//  }
-
-//  public List getIntensitiesForCDFOut() {
-//    // Need all scans with no intensity to be set to zero
-//
-//    List intensityList = new ArrayList();
-//
-//    for (int curScanNum = 0; curScanNum < scanNumbers.length; curScanNum++) {
-//      if (dataPointsMap.get(curScanNum) == null) {
-//        intensityList.add(0.0);
-//      } else {
-//        intensityList.add(dataPointsMap.get(curScanNum).getIntensity());
-//      }
-//    }
-//
-//    return intensityList;
-//
-//  }
-
-
   public int findNumberOfContinuousPointsAboveNoise(double noise, int[] scanNumbers) {
     // sort the array containing all of the scan numbers of the point added
     // loop over the sorted array now.
@@ -135,9 +107,12 @@ public class ADAPChromatogram implements Feature {
     // otherwise start it oer when you hit a sufficiently high point.
     // keep track of the largest count which will be returned.
 
+    int[] sortedScanNumbers = Arrays.copyOf(scanNumbers, scanNumbers.length);
+    Arrays.sort(sortedScanNumbers);
+
     int bestCount = 0;
     int curCount = 0;
-    for (int scanNumber : scanNumbers) {
+    for (int scanNumber : sortedScanNumbers) {
 
       DataPoint dataPoint = getDataPoint(scanNumber);
 
@@ -156,55 +131,7 @@ public class ADAPChromatogram implements Feature {
       if (curCount > bestCount)
         bestCount = curCount;
     }
-
-
-//    int bestCount = 0;
-//    int curCount = 0;
-//    int lastScanNum = 0;
-//    int scanListLength = chromScanList.size();
-//
-//    int curScanNum;
-//    DataPoint curDataPoint;
-//
-//    for (int i = 1; i < scanListLength; i++) {
-//
-//
-//
-//      curScanNum = chromScanList.get(i);
-//      curDataPoint = dataPointsMap.get(curScanNum);
-//
-//      if (curDataPoint.getIntensity() > noise) {
-//
-//        lastScanNum = chromScanList.get(i - 1);
-//        int lastScanNumsActIndex = Arrays.binarySearch(scanNumbers, lastScanNum);
-//        int seqNextScanShouldBe = scanNumbers[lastScanNumsActIndex + 1];
-//
-//        if (seqNextScanShouldBe == curScanNum) {
-//          curCount += 1;
-//          if (curCount > bestCount) {
-//            bestCount = curCount;
-//          }
-//        } else {
-//          curCount = 0;
-//        }
-//
-//      } else {
-//        curCount = 0;
-//      }
-//
-//
-//    }
-
-
-
-    // System.out.println("bestCount");
-    // System.out.println(bestCount);
-
-    // plus one because first point considered in advancing curcount is actualy going to be the
-    // second point/
     return bestCount;
-
-
   }
 
   /**
@@ -214,8 +141,8 @@ public class ADAPChromatogram implements Feature {
    * @param mzValue
    */
   public void addMzPeak(int scanNumber, DataPoint mzValue) {
+
     double curIntensity;
-    // System.out.println("---------------- Adding MZ value to Chromatogram ----------------");
 
     // If we already have a mzvalue for the scan number then we need to add the intensities
     // together before putting it into the dataPointsMap, otherwise the chromatogram is only
@@ -223,20 +150,13 @@ public class ADAPChromatogram implements Feature {
     //
     // For now just don't add the point if we have it already. The highest point will be the
     // first one added
-    if (dataPointsMap.containsKey(scanNumber)) {
+    if (dataPointsMap.containsKey(scanNumber))
       return;
 
-    }
-
-
-
     dataPointsMap.put(scanNumber, mzValue);
-    lastMzPeak = mzValue;
     mzSum += mzValue.getMZ();
     mzN++;
     mz = mzSum / mzN;
-//    buildingSegment.add(scanNumber);
-//    chromScanList.add(scanNumber);
 
     curIntensity = mzValue.getIntensity();
 
@@ -245,7 +165,6 @@ public class ADAPChromatogram implements Feature {
     sumOfWeights += curIntensity;
 
     weightedMz = weightedMzSum / sumOfWeights;
-
   }
 
   @Override
@@ -260,13 +179,6 @@ public class ADAPChromatogram implements Feature {
     }
 
     throw new IllegalStateException("Both dataPointsMap and scanNumbers are null.");
-  }
-
-  /**
-   * Returns m/z value of last added data point
-   */
-  public DataPoint getLastMzPeak() {
-    return lastMzPeak;
   }
 
   /**
@@ -367,8 +279,8 @@ public class ADAPChromatogram implements Feature {
 
   @Override
   public void outputChromToFile() {
-    // int allScanNumbers[] = Ints.toArray(dataPointsMap.keySet());
-    int allScanNumbers[] = getScanNumbers();
+
+    int[] allScanNumbers = getScanNumbers();
     Arrays.sort(allScanNumbers);
     try {
       String fileName = dataFile.getName();
@@ -424,37 +336,46 @@ public class ADAPChromatogram implements Feature {
 
   public void finishChromatogram() {
 
-    int allScanNumbers[] = Ints.toArray(dataPointsMap.keySet());
-    Arrays.sort(allScanNumbers);
-
     // Update raw data point ranges, height, rt and representative scan
     height = Double.MIN_VALUE;
-    for (int i = 0; i < allScanNumbers.length; i++) {
 
-      DataPoint mzPeak = dataPointsMap.get(allScanNumbers[i]);
+    double minMz = mz;
+    double maxMz = mz;
+    double minRetTime = Double.MAX_VALUE;
+    double maxRetTime = -Double.MAX_VALUE;
+    double minIntensity = Double.MAX_VALUE;
+    double maxIntensity = -Double.MAX_VALUE;
+    for (Map.Entry<Integer, DataPoint> e : dataPointsMap.entrySet()) {
 
-      // Replace the MzPeak instance with an instance of SimpleDataPoint,
-      // to reduce the memory usage. After we finish this Chromatogram, we
-      // don't need the additional data provided by the MzPeak
+      DataPoint mzPeak = e.getValue();
+      int currentScan = e.getKey();
+      double currentIntensity = mzPeak.getIntensity();
+      double currentMz = mzPeak.getMZ();
+      double currentRetTime = dataFile.getScan(e.getKey()).getRetentionTime();
 
-//      dataPointsMap.put(allScanNumbers[i], mzPeak);
-
-      if (i == 0) {
-        rawDataPointsIntensityRange = Range.singleton(mzPeak.getIntensity());
-        rawDataPointsMZRange = Range.singleton(mzPeak.getMZ());
-      } else {
-        rawDataPointsIntensityRange =
-            rawDataPointsIntensityRange.span(Range.singleton(mzPeak.getIntensity()));
-        rawDataPointsMZRange = rawDataPointsMZRange.span(Range.singleton(mzPeak.getMZ()));
+      if (height < currentIntensity) {
+        height = currentIntensity;
+        rt = currentRetTime;
+        mz = currentMz;
+        representativeScan = currentScan;
       }
 
-      if (height < mzPeak.getIntensity()) {
-        height = mzPeak.getIntensity();
-        rt = dataFile.getScan(allScanNumbers[i]).getRetentionTime();
-        mz = mzPeak.getMZ();
-        representativeScan = allScanNumbers[i];
-      }
+      if (currentMz < minMz) minMz = currentMz;
+      if (currentMz > maxMz) maxMz = currentMz;
+
+      if (currentIntensity < minIntensity) minIntensity = currentIntensity;
+      if (currentIntensity > maxIntensity) maxIntensity = currentIntensity;
+
+      if (currentRetTime > maxRetTime) maxRetTime = currentRetTime;
+      if (currentRetTime < minRetTime) minRetTime = currentRetTime;
     }
+
+    rawDataPointsMZRange = Range.closed(minMz, maxMz);
+    rawDataPointsIntensityRange = Range.closed(minIntensity, maxIntensity);
+    rawDataPointsRTRange = Range.closed(minRetTime, maxRetTime);
+
+    int[] allScanNumbers = Ints.toArray(dataPointsMap.keySet());
+    Arrays.sort(allScanNumbers);
 
     // Update area
     area = 0;
@@ -481,26 +402,9 @@ public class ADAPChromatogram implements Feature {
         this.charge = precursorCharge;
     }
 
-    rawDataPointsRTRange = null;
-
-    for (int scanNum : allScanNumbers) {
-      double scanRt = dataFile.getScan(scanNum).getRetentionTime();
-      DataPoint dp = getDataPoint(scanNum);
-
-      if ((dp == null) || (dp.getIntensity() == 0.0))
-        continue;
-
-      if (rawDataPointsRTRange == null)
-        rawDataPointsRTRange = Range.singleton(scanRt);
-      else
-        rawDataPointsRTRange = rawDataPointsRTRange.span(Range.singleton(scanRt));
-    }
-
     // Save DataPoints from dataPointsMap to scanNumbers[] and dataPoints[]
-
     this.scanNumbers = new int[dataPointsMap.size()];
     this.dataPoints = new DataPoint[dataPointsMap.size()];
-
     int i = 0;
     for (SortedMap.Entry<Integer, DataPoint> e : dataPointsMap.entrySet()) {
       this.scanNumbers[i] = e.getKey();
@@ -509,42 +413,9 @@ public class ADAPChromatogram implements Feature {
     }
 
     // Discard the fields we don't need anymore
-//    buildingSegment = null;
-    lastMzPeak = null;
     dataPointsMap.clear();
     dataPointsMap = null;
   }
-
-//  public double getBuildingSegmentLength() {
-//    if (buildingSegment.size() < 2)
-//      return 0;
-//    int firstScan = buildingSegment.firstElement();
-//    int lastScan = buildingSegment.lastElement();
-//    double firstRT = dataFile.getScan(firstScan).getRetentionTime();
-//    double lastRT = dataFile.getScan(lastScan).getRetentionTime();
-//    return (lastRT - firstRT);
-//  }
-//
-//  public int getNumberOfCommittedSegments() {
-//    return numOfCommittedSegments;
-//  }
-//
-//  public void removeBuildingSegment() {
-//    for (int scanNumber : buildingSegment)
-//      dataPointsMap.remove(scanNumber);
-//    buildingSegment.clear();
-//  }
-//
-//  public void commitBuildingSegment() {
-//    buildingSegment.clear();
-//    numOfCommittedSegments++;
-//  }
-//
-//  public void addDataPointsFromChromatogram(ADAPChromatogram ch) {
-//    for (Entry<Integer, DataPoint> dp : ch.dataPointsMap.entrySet()) {
-//      addMzPeak(dp.getKey(), dp.getValue());
-//    }
-//  }
 
   @Override
   public int getCharge() {

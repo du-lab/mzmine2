@@ -323,12 +323,12 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
         if (toBeLowerBound < toBeUpperBound) {
           Range<Double> newRange = Range.open(toBeLowerBound, toBeUpperBound);
-          ADAPChromatogram newChrom = new ADAPChromatogram(dataFile, allScanNumbers);
+          ADAPChromatogram newChrom = new ADAPChromatogram(dataFile);  // allScanNumbers
 
 //          newChrom.addMzPeak(mzPeak.getScanNumber(), mzPeak);
           newChrom.addMzPeak(scanNumber, mzPeak);
 
-          newChrom.setHighPointMZ(mzPeak.getMZ());
+//          newChrom.setHighPointMZ(mzPeak.getMZ());
 
 
           rangeToChromMap.put(newRange, newChrom);
@@ -383,7 +383,7 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
       // And remove chromatograms who dont have a certian number of continous points above the
       // IntensityThresh2 level.
       double numberOfContinuousPointsAboveNoise =
-          chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2);
+          chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2, allScanNumbers);
       if (numberOfContinuousPointsAboveNoise < minimumScanSpan) {
         // System.out.println("skipping chromatogram because it does not meet the min point scan
         // requirements");

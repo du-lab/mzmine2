@@ -310,7 +310,7 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
         if (toBeLowerBound < toBeUpperBound) {
 //          Range<Double> newRange = Range.open(toBeLowerBound, toBeUpperBound);
           ADAPChromatogram newChromatogram = new ADAPChromatogram(
-              dataFile, toBeLowerBound, toBeUpperBound);  // allScanNumbers
+              dataFile, toBeLowerBound, toBeUpperBound, allScanNumbers);  // allScanNumbers
           newChromatogram.addMzPeak(scanNumber, mzPeak);
           chromatograms.add(newChromatogram);
 //          rangeToChromMap.put(newRange, newChrom);
@@ -345,7 +345,7 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
       chromatogram.finishChromatogram();
 
       double numberOfContinuousPointsAboveNoise =
-          chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2, allScanNumbers);
+          chromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2);
 
       if (numberOfContinuousPointsAboveNoise >= minimumScanSpan)
         finishedChromatograms.add(chromatogram);

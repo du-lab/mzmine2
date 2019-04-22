@@ -95,17 +95,19 @@ public class ADAPChromatogram implements Feature {
   /**
    * Initializes this Chromatogram
    */
-  public ADAPChromatogram(RawDataFile dataFile, double minMz, double maxMz) {
+  public ADAPChromatogram(RawDataFile dataFile, double minMz, double maxMz, int[] scanNumbers) {
 
     this.dataFile = dataFile;
     this.minMz = minMz;
     this.maxMz = maxMz;
+    this.scanNumbers = scanNumbers;
+
     rawDataPointsRTRange = dataFile.getDataRTRange(1);
 
     dataPointsMap = new TreeMap<>();
   }
 
-  public int findNumberOfContinuousPointsAboveNoise(double noise, int[] scanNumbers) {
+  public int findNumberOfContinuousPointsAboveNoise(double noise) {
     // sort the array containing all of the scan numbers of the point added
     // loop over the sorted array now.
     // if you find a point with intensity higher than noise start the count
@@ -179,15 +181,15 @@ public class ADAPChromatogram implements Feature {
   @Override
   public DataPoint getDataPoint(int scanNumber) throws IllegalStateException {
 
-    if (dataPointsMap != null)
-      return dataPointsMap.get(scanNumber);
+//    if (dataPointsMap != null)
+    return dataPointsMap.get(scanNumber);
 
-    if (scanNumbers != null) {
-      int index = Arrays.binarySearch(scanNumbers, scanNumber);
-      return (index < 0) ? null : dataPoints[index];
-    }
-
-    throw new IllegalStateException("Both dataPointsMap and scanNumbers are null.");
+//    if (dataPoints != null) {
+//      int index = Arrays.binarySearch(scanNumbers, scanNumber);
+//      return (index < 0) ? null : dataPoints[index];
+//    }
+//
+//    throw new IllegalStateException("Both dataPointsMap and dataPoints are null.");
   }
 
   /**
@@ -411,19 +413,19 @@ public class ADAPChromatogram implements Feature {
         this.charge = precursorCharge;
     }
 
-    // Save DataPoints from dataPointsMap to scanNumbers[] and dataPoints[]
-    this.scanNumbers = new int[dataPointsMap.size()];
-    this.dataPoints = new DataPoint[dataPointsMap.size()];
-    int i = 0;
-    for (SortedMap.Entry<Integer, DataPoint> e : dataPointsMap.entrySet()) {
-      this.scanNumbers[i] = e.getKey();
-      this.dataPoints[i] = e.getValue();
-      ++i;
-    }
-
-    // Discard the fields we don't need anymore
-    dataPointsMap.clear();
-    dataPointsMap = null;
+//    // Save DataPoints from dataPointsMap to scanNumbers[] and dataPoints[]
+//    this.scanNumbers = new int[dataPointsMap.size()];
+//    this.dataPoints = new DataPoint[dataPointsMap.size()];
+//    int i = 0;
+//    for (SortedMap.Entry<Integer, DataPoint> e : dataPointsMap.entrySet()) {
+//      this.scanNumbers[i] = e.getKey();
+//      this.dataPoints[i] = e.getValue();
+//      ++i;
+//    }
+//
+//    // Discard the fields we don't need anymore
+//    dataPointsMap.clear();
+//    dataPointsMap = null;
   }
 
   @Override

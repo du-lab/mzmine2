@@ -28,6 +28,7 @@ import net.sf.mzmine.modules.peaklistmethods.alignment.join.JoinAlignerModule;
 import net.sf.mzmine.modules.peaklistmethods.alignment.ransac.RansacAlignerModule;
 import net.sf.mzmine.modules.peaklistmethods.dataanalysis.clustering.ClusteringModule;
 import net.sf.mzmine.modules.peaklistmethods.dataanalysis.heatmaps.HeatMapModule;
+import net.sf.mzmine.modules.peaklistmethods.dataanalysis.mummichog.MummichogModule;
 import net.sf.mzmine.modules.peaklistmethods.dataanalysis.projectionplots.CDAPlotModule;
 import net.sf.mzmine.modules.peaklistmethods.dataanalysis.projectionplots.PCAPlotModule;
 import net.sf.mzmine.modules.peaklistmethods.dataanalysis.projectionplots.SammonsPlotModule;
@@ -178,6 +179,7 @@ public class MZmineModulesList {
       // Data analysis
       CVPlotModule.class, LogratioPlotModule.class, PCAPlotModule.class, CDAPlotModule.class,
       SammonsPlotModule.class, ClusteringModule.class, HeatMapModule.class, SignificanceModule.class,
+      MummichogModule.class,
 
       // Identification
       CustomDBSearchModule.class, FormulaPredictionModule.class, FragmentSearchModule.class,

@@ -43,14 +43,16 @@ public class MummichogTask extends AbstractTask {
   private final boolean force_primary_ion;
   private final String modeling;
   private final File output;
+  private final String ionMode;
   ExecuteMummiChog emc;
+  
 
   public String getTaskDescription() {
     return "Calculating Mummichog... ";
   }
 
   public MummichogTask(PeakListRow[] peakListRows, double cutoff, String network,
-      boolean force_primary_ion, String modeling, File output) {
+      boolean force_primary_ion, String modeling,String ionMode, File output) {
     super();
     this.peakListRows = peakListRows;
     this.cutoff = cutoff;
@@ -58,6 +60,11 @@ public class MummichogTask extends AbstractTask {
     this.force_primary_ion = force_primary_ion;
     this.modeling = modeling;
     this.output = output;
+    if(ionMode.equalsIgnoreCase("Positive-Default")) {
+    	this.ionMode="pos_default";
+    }else {
+    	this.ionMode="negative";
+    }
   }
 
   public double getFinishedPercentage() {
@@ -77,7 +84,7 @@ public class MummichogTask extends AbstractTask {
       emc = new ExecuteMummiChog();
 
       MummichogParams mummiParameters = new MummichogParams(this.cutoff, this.network,
-          this.force_primary_ion, this.modeling, this.output.getAbsolutePath());
+          this.force_primary_ion, this.modeling,this.ionMode, this.output.getAbsolutePath());
 
 
       @SuppressWarnings("unused")

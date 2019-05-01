@@ -36,8 +36,12 @@ public class MummichogParameters extends SimpleParameterSet {
       new ComboParameter<String>("Metabolic Network", "Choose the metabolic network to be used",
           new String[] {"human", "worm"}, "human");
   public static final ComboParameter<String> modeling = new ComboParameter<String>(
-      "Distriution Estimator", "Choose the type of estimation to be used",
+      "Distribution Estimator", "Choose the type of estimation to be used",
       new String[] {"Non-Parametric", "Gamma"}, "Non-Parametric");
+  
+  public static final ComboParameter<String> ionMode = new ComboParameter<String>(
+	      "Ion Mode", "Choose the type of Ions to be used",
+	      new String[] {"Positive-Default", "Negative"}, "Positive-Default");
 
   public static final BooleanParameter force_primary_ion = new BooleanParameter(
       "Primary Ion Mandate", "Enforce Primary Ion in Empirical Compunds", true);
@@ -46,6 +50,6 @@ public class MummichogParameters extends SimpleParameterSet {
       new DirectoryParameter("Output Directory", "Output directory");
 
   public MummichogParameters() {
-    super(new Parameter[] {peakLists, cutoff, network, force_primary_ion, modeling, output});
+    super(new Parameter[] {peakLists, cutoff, network, force_primary_ion, modeling,ionMode, output});
   }
 }

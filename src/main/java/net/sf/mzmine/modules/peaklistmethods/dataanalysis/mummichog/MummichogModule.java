@@ -52,6 +52,7 @@ public class MummichogModule implements MZmineRunnableModule {
     boolean force_primary_ion =
         parameters.getParameter(MummichogParameters.force_primary_ion).getValue();
     String modeling = parameters.getParameter(MummichogParameters.modeling).getValue();
+    String ionMode=parameters.getParameter(MummichogParameters.ionMode).getValue();
     File output = parameters.getParameter(MummichogParameters.output).getValue();
 
     PeakList[] peakLists =
@@ -60,7 +61,7 @@ public class MummichogModule implements MZmineRunnableModule {
     for (PeakList peakList : peakLists) {
 
       tasks.add(new MummichogTask(peakList.getRows(), cutoff, network, force_primary_ion, modeling,
-          output));
+    		  ionMode, output));
     }
 
     return ExitCode.OK;

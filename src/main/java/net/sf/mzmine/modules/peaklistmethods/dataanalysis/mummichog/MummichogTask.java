@@ -31,8 +31,8 @@ import pojo.MummichogParams;
 
 public class MummichogTask extends AbstractTask {
 
-  private static final String P_VALUE_KEY = "P_Value";
-  private static final String T_VALUE_KEY = "T_Value";
+  private static final String P_VALUE_KEY = "STUDENT_P_VALUE";
+  private static final String T_VALUE_KEY = "STUDENT_T_VALUE";
 
   private Logger logger = Logger.getLogger(this.getClass().getName());
   private double finishedPercentage = 0.0;
@@ -87,6 +87,7 @@ public class MummichogTask extends AbstractTask {
           this.force_primary_ion, this.modeling,this.ionMode, this.output.getAbsolutePath());
 
 
+      System.out.println(input);
       @SuppressWarnings("unused")
       Map<String, List<Compound>> mummiOutput = emc.runMummiChog(input, mummiParameters);
       finishedPercentage = 0.90;

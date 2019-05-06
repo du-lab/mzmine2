@@ -157,8 +157,6 @@ public class SignificanceTask extends AbstractTask {
                 peakInformation = new SimplePeakInformation();
 
             if (tTest != null) {
-                peakInformation.getAllProperties().remove(P_VALUE_KEY);
-                peakInformation.getAllProperties().remove(T_VALUE_KEY);
                 peakInformation.getAllProperties().put(P_VALUE_KEY, Double.toString(tTest.pvalue));
                 peakInformation.getAllProperties().put(T_VALUE_KEY, Double.toString(tTest.t));
             }

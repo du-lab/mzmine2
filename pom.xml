@@ -711,7 +711,7 @@
 	<dependency>
 		<groupId>org.du-lab.Mummichog</groupId>
 		<artifactId>Mummichog</artifactId>
-		<version>1.0.10</version>
+		<version>1.0.11</version>
 	</dependency>
 		<!-- Mummichog Dependencies end -->
 

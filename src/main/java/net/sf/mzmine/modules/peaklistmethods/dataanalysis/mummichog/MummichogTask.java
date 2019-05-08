@@ -90,7 +90,7 @@ public class MummichogTask extends AbstractTask {
       System.out.println(input);
       @SuppressWarnings("unused")
       Map<String, List<Compound>> mummiOutput = emc.runMummiChog(input, mummiParameters);
-      finishedPercentage = 0.90;
+      
 
       // Code to update the align peak list
       for (String mzr : mummiOutput.keySet()) {
@@ -106,7 +106,7 @@ public class MummichogTask extends AbstractTask {
           }
         }
       }
-      finishedPercentage = 1.00;
+      finishedPercentage = 0.90;
       setStatus(TaskStatus.FINISHED);
       logger.info("Calculating Mummichog is completed");
     } catch (Exception e) {

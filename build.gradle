@@ -79,10 +79,10 @@ dependencies {
     compile 'uk.ac.ebi.pride:jmztab-modular-util:3.0.8'
     compile 'org.apache.xmlgraphics:fop:1.0'
     compile 'org.freehep:freehep-graphicsio-emf:2.4'
-    compile 'io.github.msdk:msdk-io-mzml:0.0.19'
-    compile 'io.github.msdk:msdk-io-netcdf:0.0.19'
-    compile 'io.github.msdk:msdk-featuredetection-adap3d:0.0.19'
-    compile 'io.github.msdk:msdk-id-sirius:0.0.19'
+    compile 'io.github.msdk:msdk-io-mzml:0.0.21'
+    compile 'io.github.msdk:msdk-io-netcdf:0.0.21'
+    compile 'io.github.msdk:msdk-featuredetection-adap3d:0.0.21'
+    compile 'io.github.msdk:msdk-id-sirius:0.0.21'
     compile 'org.xerial:sqlite-jdbc:3.8.11.2'
     compile 'org.du-lab.adap:adap:4.0.1'
     compile 'gnf:clustering:20130919'
@@ -155,7 +155,11 @@ runtime {
 tasks.runtime.doLast {
     copy {
         from('src/main/icons')
-        into("$buildDir/icons")
+        into("${buildDir}/${applicationName}-${version}/icons")
     }
+    copy {
+        from('src/main/log')
+        into("${buildDir}/${applicationName}-${version}/log")
+    }    
 }
 

@@ -144,8 +144,12 @@ public class ImportAdductsAction extends AbstractAction {
 
         try {
 
+          String name = line[0];
+          double massDifference = Double.parseDouble(line[1]);
+          int massFactor = (line.length >= 3) ? Integer.parseInt(line[2]) : 1;
+
           // Create new adduct and add it to the choices if it's new.
-          final AdductType adduct = new AdductType(line[0], Double.parseDouble(line[1]));
+          final AdductType adduct = new AdductType(name, massFactor, massDifference);
           if (!choices.contains(adduct)) {
 
             choices.add(adduct);

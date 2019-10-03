@@ -124,7 +124,10 @@ public class ExportAdductsAction extends AbstractAction {
     final CSVPrinter writer = new CSVPrinter(new FileWriter(file));
     for (final AdductType adduct : adducts) {
 
-      writer.writeln(new String[] {adduct.getName(), String.valueOf(adduct.getMassDifference())});
+      writer.writeln(new String[] {
+              adduct.getName(),
+              String.valueOf(adduct.getMassDifference()),
+              String.valueOf(adduct.getMassFactor())});
     }
   }
 }

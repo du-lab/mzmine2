@@ -39,6 +39,7 @@ import net.sf.mzmine.parameters.ParameterSet;
 import net.sf.mzmine.parameters.impl.SimpleParameterSet;
 import net.sf.mzmine.parameters.parametertypes.AdductsComponent;
 import net.sf.mzmine.parameters.parametertypes.DoubleParameter;
+import net.sf.mzmine.parameters.parametertypes.IntegerParameter;
 import net.sf.mzmine.parameters.parametertypes.StringParameter;
 import net.sf.mzmine.util.ExitCode;
 
@@ -79,6 +80,7 @@ public class AddAdductsAction extends AbstractAction {
         // Create new adduct.
         final AdductType adduct =
             new AdductType(parameters.getParameter(AddAdductParameters.NAME).getValue(),
+                parameters.getParameter(AddAdductParameters.MASS_FACTOR).getValue(),
                 parameters.getParameter(AddAdductParameters.MASS_DIFFERENCE).getValue());
 
         // Add to list of choices (if not already present).
@@ -87,7 +89,7 @@ public class AddAdductsAction extends AbstractAction {
         if (!choices.contains(adduct)) {
 
           choices.add(adduct);
-          parent.setChoices(choices.toArray(new AdductType[choices.size()]));
+          parent.setChoices(choices.toArray(new AdductType[0]));
         }
       }
     }
@@ -102,12 +104,15 @@ public class AddAdductsAction extends AbstractAction {
     private static final StringParameter NAME =
         new StringParameter("Name", "A name to identify the new adduct");
 
+    private static final IntegerParameter MASS_FACTOR = new IntegerParameter("Mass factor",
+            "Mass factor for the new adduct", 1);
+
     // Adduct mass difference.
     private static final DoubleParameter MASS_DIFFERENCE = new DoubleParameter("Mass difference",
         "Mass difference for the new adduct", MZmineCore.getConfiguration().getMZFormat());
 
     private AddAdductParameters() {
-      super(new Parameter[] {NAME, MASS_DIFFERENCE});
+      super(new Parameter[] {NAME, MASS_FACTOR, MASS_DIFFERENCE});
     }
   }
 }

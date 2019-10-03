@@ -37,12 +37,18 @@ public class AdductType {
       {NA, K, MG, NH3, PHOSPHATE, SULFATE, CARBONATE, GLYCEROL};
 
   private final String name;
+  private final int massFactor;
   private final double massDifference;
 
-  public AdductType(final String aName, final double difference) {
+  public AdductType(final String aName, final int factor, final double difference) {
 
     name = aName;
+    massFactor = factor;
     massDifference = difference;
+  }
+
+  public AdductType(final String aName, final double difference) {
+    this(aName, 1, difference);
   }
 
   public String getName() {
@@ -53,6 +59,10 @@ public class AdductType {
   public double getMassDifference() {
 
     return massDifference;
+  }
+
+  public double getMassFactor() {
+    return massFactor;
   }
 
   /**
@@ -75,6 +85,7 @@ public class AdductType {
 
       eq = adduct == this
           || (name == null && adduct.name == null || name != null && name.equals(adduct.name))
+              && massFactor == adduct.massFactor
               && massDifference == adduct.massDifference;
     } else {
 
@@ -85,7 +96,7 @@ public class AdductType {
   }
 
   public String toString() {
-
-    return name + ' ' + MZmineCore.getConfiguration().getMZFormat().format(massDifference) + " m/z";
+    String strFactor = (massFactor != 1) ? String.valueOf(massFactor) : "";
+    return name + " (" + strFactor + "M + " + MZmineCore.getConfiguration().getMZFormat().format(massDifference) + " m/z)";
   }
 }

@@ -184,7 +184,7 @@ public class AdductSearchTask extends AbstractTask {
 
     return
     // Check mass difference condition.
-    mzTolerance.checkWithinTolerance(mainPeak.getAverageMZ() + adduct.getMassDifference(),
+    mzTolerance.checkWithinTolerance(adduct.getMassFactor() * mainPeak.getAverageMZ() + adduct.getMassDifference(),
         possibleAdduct.getAverageMZ())
 
         // Check retention time condition.

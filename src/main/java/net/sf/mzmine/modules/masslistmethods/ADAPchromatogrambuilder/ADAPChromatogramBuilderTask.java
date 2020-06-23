@@ -406,8 +406,9 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
 
     }
 
-    ADAPChromatogram[] chromatograms = buildingChromatograms.toArray(new ADAPChromatogram[0]);
+    buildingChromatograms = trimChromatograms(buildingChromatograms);
 
+    ADAPChromatogram[] chromatograms = buildingChromatograms.toArray(new ADAPChromatogram[0]);
 
     // Sort the final chromatograms by m/z
     Arrays.sort(chromatograms, new PeakSorter(SortingProperty.MZ, SortingDirection.Ascending));
@@ -436,4 +437,61 @@ public class ADAPChromatogramBuilderTask extends AbstractTask {
     logger.info("Finished chromatogram builder on " + dataFile);
   }
 
+  private List<ADAPChromatogram> trimChromatograms(List<ADAPChromatogram> adapChromatograms) {
+
+    List<ADAPChromatogram> trimmedChromatograms = new ArrayList<>();
+
+    for (ADAPChromatogram adapChromatogram : adapChromatograms) {
+
+      int[] scanNumbers = adapChromatogram.getScanNumbers();
+
+      List<DataPoint> trimmedDataPoints = new ArrayList<>();
+      List<Integer> trimmedScans = new ArrayList<>();
+      long currentScan = -1;
+      for (int scan : scanNumbers) {
+        DataPoint dataPoint = adapChromatogram.getDataPoint(scan);
+        if (dataPoint == null) continue;
+        if ((currentScan == -1 || scan - currentScan <= minimumScanSpan) && dataPoint.getIntensity() > 0.0) {
+          trimmedDataPoints.add(dataPoint);
+          trimmedScans.add(scan);
+        } else {
+
+          ADAPChromatogram trimmedChromatogram = createChromatogram(scanNumbers, trimmedDataPoints, trimmedScans);
+          if (trimmedChromatogram != null) {
+            trimmedChromatograms.add(trimmedChromatogram);
+          }
+          trimmedDataPoints = new ArrayList<>();
+          trimmedScans = new ArrayList<>();
+        }
+        currentScan = scan;
+      }
+
+      ADAPChromatogram trimmedChromatogram = createChromatogram(scanNumbers, trimmedDataPoints, trimmedScans);
+      if (trimmedChromatogram != null) {
+        trimmedChromatograms.add(trimmedChromatogram);
+      }
+    }
+
+    return trimmedChromatograms;
+  }
+
+  private ADAPChromatogram createChromatogram(int[] scanNumbers, List<DataPoint> dataPoints, List<Integer> scans) {
+
+    if (dataPoints.isEmpty() || scans.isEmpty()) return null;
+
+    ADAPChromatogram trimmedChromatogram = new ADAPChromatogram(dataFile, scanNumbers);
+
+    for (int i = 0; i < dataPoints.size(); ++i) {
+      trimmedChromatogram.addMzPeak(scans.get(i), dataPoints.get(i));
+    }
+    trimmedChromatogram.finishChromatogram();
+
+    int numberOfContinuousPointsAboveNoise =
+            trimmedChromatogram.findNumberOfContinuousPointsAboveNoise(IntensityThresh2);
+
+    if (numberOfContinuousPointsAboveNoise < minimumScanSpan)
+      return null;
+
+    return trimmedChromatogram;
+  }
 }

@@ -311,6 +311,8 @@ public class ADAP3DecompositionV2SetupDialog extends ParameterSetupDialog {
 
         Double retTimeTolerance = parameterSet.getParameter(
                 ADAP3DecompositionV2Parameters.RET_TIME_TOLERANCE).getValue();
+        Double intensityFactor = parameterSet.getParameter(
+                ADAP3DecompositionV2Parameters.INTENSITY_FACTOR).getValue();
         Boolean adjustApexRetTime = parameterSet.getParameter(
                 ADAP3DecompositionV2Parameters.ADJUST_APEX_RET_TIME).getValue();
         Integer minClusterSize = parameterSet.getParameter(
@@ -324,7 +326,7 @@ public class ADAP3DecompositionV2SetupDialog extends ParameterSetupDialog {
         List<BetterComponent> components = null;
         try {
             components = new ComponentSelector().execute(chromatograms, cluster,
-                    retTimeTolerance, adjustApexRetTime, minClusterSize);
+                    retTimeTolerance, intensityFactor, adjustApexRetTime, minClusterSize);
         } catch (Exception e) {
             e.printStackTrace();
         }

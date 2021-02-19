@@ -20,10 +20,7 @@ import java.text.NumberFormat;
 
 import net.sf.mzmine.parameters.Parameter;
 import net.sf.mzmine.parameters.impl.SimpleParameterSet;
-import net.sf.mzmine.parameters.parametertypes.BooleanParameter;
-import net.sf.mzmine.parameters.parametertypes.DoubleParameter;
-import net.sf.mzmine.parameters.parametertypes.IntegerParameter;
-import net.sf.mzmine.parameters.parametertypes.StringParameter;
+import net.sf.mzmine.parameters.parametertypes.*;
 import net.sf.mzmine.parameters.parametertypes.selectors.PeakListsParameter;
 import net.sf.mzmine.parameters.parametertypes.selectors.PeakListsSelectionType;
 import net.sf.mzmine.util.ExitCode;
@@ -61,6 +58,10 @@ public class ADAP3DecompositionV2Parameters extends SimpleParameterSet {
                     " in a window. The larger tolerance, the smaller components are determined.",
             NumberFormat.getNumberInstance(), 0.05, 0.0, Double.MAX_VALUE);
 
+    public static final PercentParameter INTENSITY_FACTOR = new PercentParameter("Intensity factor (%)",
+            "Intensity threshold is calculated as the percent of the highest intensity peak. Then, this" +
+                    "intensity threshold is used to filter the peaks used to determine the number of components", 0.0);
+
     public static final IntegerParameter MIN_CLUSTER_SIZE = new IntegerParameter("Minimum Number of Peaks",
             "Minimum number of peaks that can form a component", 1);
 
@@ -81,7 +82,7 @@ public class ADAP3DecompositionV2Parameters extends SimpleParameterSet {
 
     public ADAP3DecompositionV2Parameters() {
         super(new Parameter[]{CHROMATOGRAM_LISTS, PEAK_LISTS, PREF_WINDOW_WIDTH,
-                RET_TIME_TOLERANCE, MIN_CLUSTER_SIZE, ADJUST_APEX_RET_TIME, SUFFIX, AUTO_REMOVE});
+                RET_TIME_TOLERANCE, INTENSITY_FACTOR, MIN_CLUSTER_SIZE, ADJUST_APEX_RET_TIME, SUFFIX, AUTO_REMOVE});
     }
 
     @Override

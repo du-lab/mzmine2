@@ -232,6 +232,7 @@ public class ADAP3DecompositionV2Task extends AbstractTask {
 
         params.prefWindowWidth = parameters.getParameter(ADAP3DecompositionV2Parameters.PREF_WINDOW_WIDTH).getValue();
         params.retTimeTolerance = parameters.getParameter(ADAP3DecompositionV2Parameters.RET_TIME_TOLERANCE).getValue();
+        params.intensityFactor = parameters.getParameter(ADAP3DecompositionV2Parameters.INTENSITY_FACTOR).getValue();
         params.minClusterSize = parameters.getParameter(ADAP3DecompositionV2Parameters.MIN_CLUSTER_SIZE).getValue();
         params.adjustApexRetTimes = parameters.getParameter(ADAP3DecompositionV2Parameters.ADJUST_APEX_RET_TIME).getValue();
 
